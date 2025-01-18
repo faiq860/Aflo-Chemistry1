@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chemistry Reagents Volumes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .table-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chemistry Reagents Volumes</h1>
+        <label for="labName">Lab Name:</label>
+        <input type="text" id="labName" placeholder="Enter lab name (Arabic or English)">
+
+        <label for="testSelect">Select Test:</label>
+        <select id="testSelect">
+            <option value="">-- Select a Test --</option>
+        </select>
+
+        <label for="testNumber">Number of Tests:</label>
+        <input type="number" id="testNumber" min="1" placeholder="Enter number of tests">
+
+        <button onclick="calculate()">Calculate</button>
+        <button onclick="saveToPdf()">Save to PDF</button>
+
+        <div id="message"></div>
+
+        <div class="table-container">
+            <table id="outputTable">
+                <thead>
+                    <tr>
+                        <th>Test Name</th>
+                        <th>R1 Volume Add (mL)</th>
+                        <th>R2 Volume Add (mL)</th>
+                        <th>Remark</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const tests = {
+            "Glucose": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "Cholosterol": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "TG": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "HDL": { R1: 225, R2: 75, remark: "READY-TO-USE" },
+            "LDL": { R1: 225, R2: 75, remark: "READY-TO-USE" },
+            "UREA": { R1: 240, R2: 60, remark: "READY-TO-USE" },
+            "Creatinine": { R1: 240, R2: 60, remark: "READY-TO-USE" },
+            "Uric Acid": { R1: 240, R2: 60, remark: "READY-TO-USE" },
+            "Bil-T": { R1: 300, R2: 0, remark: "Add 6.250 mL from Reagent A, add 250 uL from Reagent B to Container" },
+            "Bil-D": { R1: 300, R2: 0, remark: "Add 7.5 mL from Reagent A, add 250 uL from Reagent B to Container" },
+            "GPT": { R1: 300, R2: 0, remark: "Add 4 parts from Reagent A, 1 part from Reagent B to Container" },
+            "GOT": { R1: 300, R2: 0, remark: "Add 4 parts from Reagent A, 1 part from Reagent B to Container" },
+            "ALP": { R1: 300, R2: 0, remark: "Add 4 parts from Reagent A, 1 part from Reagent B to Container" },
+            "GGT": { R1: 240, R2: 60, remark: "READY-TO-USE" },
+            "Total Protein": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "Albumin": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "K": { R1: 250, R2: 50, remark: "READY-TO-USE" },
+            "Na": { R1: 200, R2: 100, remark: "READY-TO-USE" },
+            "Ca": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "CL": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "Ferritin": { R1: 240, R2: 60, remark: "READY-TO-USE" },
+            "Amylase": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "Lipase": { R1: 240, R2: 60, remark: "READY-TO-USE" },
+            "Mg": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "Phosphorus": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "ZINC": { R1: 300, R2: 0, remark: "Add 4 parts from Reagent A, 1 part from Reagent B to Container" },
+            "Vit-D3": { R1: 160, R2: 40, remark: "READY-TO-USE" },
+            "HbA1c": { R1: 240, R2: 80, remark: "READY-TO-USE" },
+            "IgA": { R1: 300, R2: 0, remark: "Add 4 parts from Reagent A, 1 part from Reagent B to Container" },
+            "IgG": { R1: 300, R2: 0, remark: "Add 4 parts from Reagent A, 1 part from Reagent B to Container" },
+            "IgM": { R1: 300, R2: 0, remark: "Add 4 parts from Reagent A, 1 part from Reagent B to Container" },
+            "IgE": { R1: 300, R2: 0, remark: "READY-TO-USE" },
+            "IRON": { R1: 300, R2: 0, remark: "Add 9 parts from Reagent A, 1 part from Reagent C to Container" },
+            "LDH": { R1: 240, R2: 60, remark: "READY-TO-USE" },
+            "ASOT": { R1: 300, R2: 0, remark: "Add 9 parts from Reagent A, 1 part from Reagent B to Container" },
+            "CRP": { R1: 300, R2: 0, remark: "Add 9 parts from Reagent A, 1 part from Reagent B to Container" },
+            "RF": { R1: 300, R2: 0, remark: "Add 9 parts from Reagent A, 1 part from Reagent B to Container" }
+        };
+
+        const testSelect = document.getElementById("testSelect");
+        Object.keys(tests).forEach(test => {
+            const option = document.createElement("option");
+            option.value = test;
+            option.textContent = test;
+            testSelect.appendChild(option);
+        });
+
+        const tableBody = document.querySelector("#outputTable tbody");
+        let calculations = [];
+
+        function calculate() {
+            const labName = document.getElementById("labName").value.trim();
+            const testName = testSelect.value;
+            const testNumber = parseInt(document.getElementById("testNumber").value);
+
+            if (!labName || !testName || !testNumber) {
+                alert("Please fill out all fields.");
+                return;
+            }
+
+            const { R1, R2, remark } = tests[testName];
+            const R1VolumeAdd = (R1 * testNumber) / 1000; // Convert to mL
+            const R2VolumeAdd = (R2 * testNumber) / 1000; // Convert to mL
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${testName}</td>
+                <td>${R1VolumeAdd.toFixed(3)} mL</td>
+                <td>${R2VolumeAdd.toFixed(3)} mL</td>
+                <td>${remark}</td>
+            `;
+            tableBody.appendChild(row);
+
+            calculations.push({ labName, testName, testNumber, R1VolumeAdd, R2VolumeAdd, remark });
+            document.getElementById("message").textContent = `${testName} done!`;
+        }
+
+        function saveToPdf() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.text("Calculation of Chemistry Reagent Volume", 10, 10);
+            const labName = calculations[0]?.labName || "No Lab Name";
+            doc.text(`Lab Name: ${labName}`, 10, 20);
+
+            const tableData = calculations.map(calc => [
+                calc.testName,
+                `${calc.R1VolumeAdd.toFixed(3)} mL`,
+                `${calc.R2VolumeAdd.toFixed(3)} mL`,
+                calc.remark,
+            ]);
+
+            doc.autoTable({
+                head: [["Test Name", "R1 Volume Add (mL)", "R2 Volume Add (mL)", "Remark"]],
+                body: tableData,
+                startY: 30,
+            });
+
+            doc.save("Chemistry_Reagents_Volumes.pdf");
+        }
+    </script>
+</body>
+</html>
